@@ -1,5 +1,3 @@
-const XWEATHER_API_KEY = "YOUR_XWEATHER_API_KEY"; // replace with your real key
-
 async function predictSnowDay() {
   const zip = document.getElementById("zip").value.trim();
   const school = document.getElementById("school").value.trim();
@@ -13,75 +11,102 @@ async function predictSnowDay() {
   const lat = 42.79, lon = -86.11;
 
   try {
-    // 1) Weather API (Open-Meteo)
-    const weatherRes = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=snowfall,temperature_2m,wind_speed&timezone=auto`
-    );
-    const weatherData = await weatherRes.json();
+    // 1. Get weather.gov POINT metadata for this location
+    const pointsRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`);
+    const pointsData = await pointsRes.json();
 
-    // Aggregate snowfall for tomorrow
-    const times = weatherData.hourly.time;
-    const snowfall = weatherData.hourly.snowfall;
+    // 2. Get gridpoints for hourly data (snowfall, temperature, wind)
+    const gridId = pointsData.properties.gridId;
+    const gridX = pointsData.properties.gridX;
+    const gridY = pointsData.properties.gridY;
+    // Fetch the grid data (6-hourly precipitation, hourly temp/wind, etc)
+    const gridRes = await fetch(`https://api.weather.gov/gridpoints/${gridId}/${gridX},${gridY}`);
+    const gridData = await gridRes.json();
+
+    // 3. Aggregate tomorrow's predicted snowfall/precipitation
+    // Use "quantitativePrecipitation" (liquid precipitation in mm) and "snowfallAmount" if available
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setDate(now.getDate() + 1);
-
+    // Find gridpoints periods for tomorrow
     let totalSnowfall = 0;
-    for (let i = 0; i < times.length; i++) {
-      const t = new Date(times[i]);
-      if (
-        t.getDate() === tomorrow.getDate() &&
-        t.getMonth() === tomorrow.getMonth() &&
-        t.getFullYear() === tomorrow.getFullYear()
-      ) {
-        totalSnowfall += snowfall[i];
+    if (gridData.properties.snowfallAmount) {
+      for (const period of gridData.properties.snowfallAmount.values) {
+        const t = new Date(period.validTime.split("/")[0]);
+        if (
+          t.getDate() === tomorrow.getDate() &&
+          t.getMonth() === tomorrow.getMonth() &&
+          t.getFullYear() === tomorrow.getFullYear()
+        ) {
+          totalSnowfall += period.value || 0;
+        }
       }
     }
 
-    const avgTemp = weatherData.hourly.temperature_2m[0];
-    const avgWind = weatherData.hourly.wind_speed[0];
-
-    // 2) Road API (Xweather)
-    let surface = "unknown", safety = "unknown";
-    try {
-      const roadRes = await fetch(
-        `https://data.api.xweather.com/roadweather/conditions/?lat=${lat}&lon=${lon}`,
-        { headers: { Authorization: `Bearer ${XWEATHER_API_KEY}` } }
-      );
-      const roadData = await roadRes.json();
-      surface = roadData.surface_condition || "unknown";
-      safety = roadData.safety_index || "unknown";
-    } catch (err) {
-      console.warn("Road API error:", err);
+    // Get average temperature and wind speed for tomorrow (from temp/windSpeed hourly)
+    let tempCount = 0, windCount = 0, tempSum = 0, windSum = 0;
+    if (gridData.properties.temperature) {
+      for (const period of gridData.properties.temperature.values) {
+        const t = new Date(period.validTime.split("/")[0]);
+        if (
+          t.getDate() === tomorrow.getDate() &&
+          t.getMonth() === tomorrow.getMonth() &&
+          t.getFullYear() === tomorrow.getFullYear()
+        ) {
+          if (typeof period.value === "number") {
+            tempSum += period.value;
+            tempCount++;
+          }
+        }
+      }
     }
+    if (gridData.properties.windSpeed) {
+      for (const period of gridData.properties.windSpeed.values) {
+        const t = new Date(period.validTime.split("/")[0]);
+        if (
+          t.getDate() === tomorrow.getDate() &&
+          t.getMonth() === tomorrow.getMonth() &&
+          t.getFullYear() === tomorrow.getFullYear()
+        ) {
+          if (typeof period.value === "number") {
+            windSum += period.value;
+            windCount++;
+          }
+        }
+      }
+    }
+    const avgTemp = tempCount ? (tempSum/tempCount) : "unknown";
+    const avgWind = windCount ? (windSum/windCount) : "unknown";
 
-    // 3) Weather.gov API
+    // 4. Get detailed forecast text for tomorrow
     let nwsForecast = "";
     try {
-      const pointsRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`);
-      const pointsData = await pointsRes.json();
       const forecastUrl = pointsData.properties.forecast;
       const forecastRes = await fetch(forecastUrl);
       const forecastData = await forecastRes.json();
-      nwsForecast = forecastData.properties.periods[1].detailedForecast;
+      // Try to find the correct "period"
+      const tomorrowString = tomorrow.toLocaleDateString('en-US', {
+        weekday: 'long'
+      });
+      const period = forecastData.properties.periods.find(
+        p => p.name === "Tomorrow" || p.name.includes(tomorrowString)
+      );
+      nwsForecast = period ? period.detailedForecast : forecastData.properties.periods[1].detailedForecast;
     } catch (err) {
-      console.warn("Weather.gov API error:", err);
+      console.warn("Weather.gov forecast text error:", err);
     }
 
-    // 4) Score calculation
+    // 5. Score calculation (simple)
     let score = 0;
     score += totalSnowfall * 5;
-    if (avgTemp <= 0) score += 5;
-    else if (avgTemp <= 10) score += 4;
-    else if (avgTemp <= 20) score += 3;
-    else if (avgTemp <= 32) score += 2;
-    else score += 1;
-
-    if (surface === "ice") score += 15;
-    else if (surface === "snow") score += 10;
-
-    if (safety === "red") score += 10;
-    else if (safety === "yellow") score += 5;
+    if (typeof avgTemp === "number") {
+      if (avgTemp <= 0) score += 5;
+      else if (avgTemp <= 10) score += 4;
+      else if (avgTemp <= 20) score += 3;
+      else if (avgTemp <= 32) score += 2;
+      else score += 1;
+    }
+    // No road/safety index available
 
     score = Math.max(0, Math.min(100, Math.round(score)));
 
@@ -90,11 +115,11 @@ async function predictSnowDay() {
     else if (score >= 60) label = "High";
     else if (score >= 40) label = "Moderate";
 
-    // 5) Display result
+    // 6. Display result
     document.getElementById("result").innerText =
       `Snow Day Likelihood for ${school}: ${label} (${score}%)`;
 
-    // 6) Display reasoning
+    // 7. Display reasoning
     const reasoningDiv = document.getElementById("reasoning");
     const content = document.getElementById("reasoningContent");
     reasoningDiv.hidden = false;
@@ -102,8 +127,8 @@ async function predictSnowDay() {
       <p><strong>Total snowfall tomorrow:</strong> ${totalSnowfall.toFixed(1)} in</p>
       <p><strong>Avg temperature:</strong> ${avgTemp} °F</p>
       <p><strong>Avg wind speed:</strong> ${avgWind} mph</p>
-      <p><strong>Road surface:</strong> ${surface}</p>
-      <p><strong>Safety index:</strong> ${safety}</p>
+      <p><strong>Road surface:</strong> unknown (weather.gov only)</p>
+      <p><strong>Safety index:</strong> unknown (weather.gov only)</p>
       <p><strong>Weather.gov forecast:</strong> ${nwsForecast}</p>
     `;
   } catch (err) {
