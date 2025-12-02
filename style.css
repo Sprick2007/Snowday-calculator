@@ -1,1 +1,132 @@
-
+body {
+  min-height: 100vh;
+  background: #f7fafc;
+  margin: 0;
+  font-family: 'Segoe UI', 'Arial', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100vw;
+}
+.card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 2px 16px rgba(44, 62, 80, 0.08);
+  border: 1px solid #ececec;
+  max-width: 480px;
+  width: 100%;
+  margin: 30px;
+  padding: 42px 32px 32px 32px;
+  box-sizing: border-box;
+}
+.icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+h1 {
+  text-align: center;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+  font-size: 2.15rem;
+  color: #1a202c;
+}
+.subtitle {
+  text-align: center;
+  color: #4a5568;
+  font-size: 1.06rem;
+  margin: 0 0 30px 0;
+}
+.label-group {
+  margin-bottom: 26px;
+}
+.label-group label {
+  font-weight: 600;
+  color: #27354a;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 1.04rem;
+}
+.input-icon {
+  font-size: 1.18em;
+  margin-right: 7px;
+}
+.input-row {
+  display: flex;
+  align-items: center;
+}
+input[type="text"] {
+  font-size: 1.12rem;
+  border: 1.3px solid #dcdcdc;
+  border-radius: 8px;
+  padding: 9px 15px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s;
+  margin-right: 0;
+  background: #f9fafb;
+}
+input[type="text"]:focus {
+  border-color: #2582e5;
+  background: #fff;
+}
+.icon-btn {
+  background: #fff;
+  border: 1.3px solid #dcdcdc;
+  border-radius: 8px;
+  padding: 8px 9px;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: border-color 0.21s, box-shadow 0.21s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  width: 46px;
+}
+.icon-btn:active, .icon-btn:focus, .icon-btn:hover {
+  border-color: #2582e5;
+  box-shadow: 0 2px 7px rgba(44, 62, 80, 0.08);
+  background: #f1f8ff;
+}
+.primary-btn {
+  width: 100%;
+  padding: 14px 0;
+  border-radius: 9px;
+  border: none;
+  background: #18233a;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.19rem;
+  cursor: pointer;
+  margin-top: 11px;
+  transition: background 0.22s;
+  box-shadow: 0 3.5px 16px rgba(44, 62, 80, 0.08);
+}
+.primary-btn:focus, .primary-btn:hover {
+  background: #2d3748;
+}
+.result-msg {
+  margin-top: 28px;
+  text-align: center;
+  color: #4a5568;
+  font-size: 1.04rem;
+}
+#reasoning {
+  margin-top: 20px;
+  border-left: 2.3px solid #2582e5;
+  padding-left: 12px;
+}
+#reasoning h3 {
+  margin: 0 0 7px 0;
+  color: #27354a;
+  font-weight: 660;
+}
