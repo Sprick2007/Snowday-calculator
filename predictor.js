@@ -1,5 +1,5 @@
+// Ensure everything waits for DOM loaded
 window.onload = function () {
-  // Both buttons run the same prediction logic
   document.getElementById('snowdayForm').onsubmit = function (e) {
     e.preventDefault();
     predictSnowDay();
@@ -17,9 +17,8 @@ function predictSnowDay() {
     return;
   }
 
-  // Simulate prediction (for demo: random, but replace with your forecast code)
-  const chance = Math.floor(Math.random() * 101); // random 0-100%
-
+  // Simulate the forecast
+  const chance = Math.floor(Math.random() * 101); // random percentage
   let msg = `Chance of a snow day at ${school} (${zip}) tomorrow: ${chance}%`;
   if (chance > 80) {
     msg += " ❄️";
