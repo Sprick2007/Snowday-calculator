@@ -1,217 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Snowday Calculator</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root {
-      --bg: #f0f8ff;
-      --text: #2c3e50;
-      --accent: #1e90ff;
-      --card: #ffffff;
-      --muted: #6b7280;
-    }
-    body {
-      font-family: system-ui, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 24px;
-      display: grid;
-      place-items: start center;
-    }
-    .container {
-      width: 100%;
-      max-width: 720px;
-      background: var(--card);
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-      padding: 24px;
-    }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 1.8rem;
-      text-align: center;
-    }
-    .subtitle {
-      margin: 0 0 24px;
-      font-size: 0.95rem;
-      color: var(--muted);
-      text-align: center;
-    }
-    form {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    .full {
-      grid-column: 1/-1;
-    }
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      font-size: 1rem;
-      outline: none;
-    }
-    input:focus, select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(30,144,255,0.15);
-    }
-    button {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    button:hover {
-      filter: brightness(1.05);
-    }
-    #result {
-      margin-top: 20px;
-      padding: 16px;
-      border-radius: 10px;
-      background: #f8fafc;
-      font-size: 1.05rem;
-    }
-    .meter {
-      margin-top: 10px;
-      height: 12px;
-      border-radius: 999px;
-      background: #e5e7eb;
-      overflow: hidden;
-    }
-    .meter > span {
-      display: block;
-      height: 100%;
-      background: linear-gradient(90deg, #ff5757, #ffa657, #ffd857, #8be78b, #2ecc71);
-      width: 0%;
-      transition: width 300ms ease;
-    }
-    .note {
-      margin-top: 12px;
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Snowday Calculator</h1>
-    <p class="subtitle">Estimate the likelihood of a school snow day based on local conditions.</p>
+<!-- Snowday Calculator Section -->
+<div class="calculator-card">
+  <h2>Snowday Calculator</h2>
+  <form id="snowdayForm">
+    <label for="temperature">Temperature (°F):</label>
+    <input type="number" id="temperature" required>
 
-    <form id="snowdayForm" onsubmit="event.preventDefault(); calculateSnowday();">
-      <div class="full">
-        <label for="district">School district</label>
-        <input type="text" id="district" name="district" placeholder="e.g., Holland Public Schools" required />
-      </div>
+    <label for="snowfall">Snowfall (inches):</label>
+    <input type="number" id="snowfall" required>
 
-      <div>
-        <label for="temperature">Temperature (°F)</label>
-        <input type="number" id="temperature" name="temperature" placeholder="e.g., 18" inputmode="decimal" required />
-      </div>
+    <label for="windspeed">Wind Speed (mph):</label>
+    <input type="number" id="windspeed" required>
 
-      <div>
-        <label for="snowfall">Snowfall amount (inches)</label>
-        <input type="number" id="snowfall" name="snowfall" placeholder="e.g., 6" inputmode="decimal" required />
-      </div>
+    <label for="district">School District:</label>
+    <input type="text" id="district" required>
 
-      <div>
-        <label for="windspeed">Wind speed (mph)</label>
-        <input type="number" id="windspeed" name="windspeed" placeholder="e.g., 22" inputmode="decimal" required />
-      </div>
+    <button type="button" onclick="calculateSnowday()">Calculate</button>
+  </form>
 
-      <div>
-        <label for="conditions">Road/ice conditions</label>
-        <select id="conditions" name="conditions" required>
-          <option value="">Select...</option>
-          <option value="clear">Mostly clear</option>
-          <option value="snowcovered">Snow covered</option>
-          <option value="icy">Icy/slippery</option>
-          <option value="drifting">Drifting/blowing snow</option>
-        </select>
-      </div>
+  <div id="result"></div>
+</div>
 
-      <div class="full">
-        <button type="submit">Calculate likelihood</button>
-      </div>
-    </form>
+<script>
+function calculateSnowday() {
+  const temp = parseFloat(document.getElementById('temperature').value);
+  const snow = parseFloat(document.getElementById('snowfall').value);
+  const wind = parseFloat(document.getElementById('windspeed').value);
+  const district = document.getElementById('district').value.trim();
 
-    <div id="result" aria-live="polite">
-      Enter conditions and click “Calculate likelihood” to see your result.
-      <div class="meter"><span id="meterFill"></span></div>
-      <p class="note">This is an estimate for planning purposes only; check official district communications for closures.</p>
-    </div>
-  </div>
+  let score = 0;
+  if (temp <= 20) score += 30;
+  else if (temp <= 32) score += 20;
+  else if (temp <= 40) score += 10;
 
-  <script>
-    function clamp(n, min, max) { return Math.min(Math.max(n, min), max); }
+  if (snow >= 6) score += 40;
+  else if (snow >= 3) score += 25;
+  else if (snow >= 1) score += 10;
 
-    function calculateSnowday() {
-      const temp = parseFloat(document.getElementById('temperature').value);
-      const snow = parseFloat(document.getElementById('snowfall').value);
-      const wind = parseFloat(document.getElementById('windspeed').value);
-      const district = (document.getElementById('district').value || '').trim().toLowerCase();
-      const conditions = document.getElementById('conditions').value;
+  if (wind >= 25) score += 20;
+  else if (wind >= 15) score += 10;
 
-      if ([temp, snow, wind].some(v => Number.isNaN(v)) || !conditions) {
-        updateResult('Please fill out all fields with valid numbers.', 0, 'Low');
-        return;
-      }
+  if (district.toLowerCase().includes("north")) score += 10;
 
-      // Scoring model (simple heuristic):
-      let score = 0;
-
-      // Temperature
-      if (temp <= 15) score += 30;
-      else if (temp <= 25) score += 22;
-      else if (temp <= 32) score += 15;
-      else if (temp <= 40) score += 8;
-
-      // Snowfall
-      if (snow >= 8) score += 40;
-      else if (snow >= 5) score += 30;
-      else if (snow >= 3) score += 18;
-      else if (snow >= 1) score += 8;
-
-      // Wind
-      if (wind >= 30) score += 16;
-      else if (wind >= 20) score += 12;
-      else if (wind >= 12) score += 6;
-
-      // Road/Ice conditions
-      if (conditions === 'icy') score += 18;
-      else if (conditions === 'drifting') score += 14;
-      else if (conditions === 'snowcovered') score += 10;
-
-      // District sensitivity (example: northern districts may be more cautious with lake-effect)
-      if (district.includes('north') || district.includes('lake')) score += 6;
-
-      // Bound and classify
-      const percent = clamp(Math.round(score), 0, 100);
-      let label = 'Low';
-      if (percent >= 80) label = 'Very high';
-      else if (percent >= 60) label = 'High';
-      else if (percent >= 40) label = 'Moderate';
-
-      updateResult(`Snow day likelihood: ${label} (${percent}%)`, percent, label);
-    }
-
-    function updateResult(text, percent, label) {
-      const result = document.getElementById('result');
-      const fill = document.getElementById('meterFill');
-      result.firstChild.nodeValue = text + ' ';
-      fill.style.width = percent + '%';
-      fill.setAttribute('aria-label', label);
-    }
-  </script>
-</body>
-</html>
+  let likelihood = "Low";
+  if (score >= 80) likelihood = "Very High";
+  else if (score >= 60) likelihood = "High";
+  else if (score >= 40
