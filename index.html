@@ -1,16 +1,98 @@
-<div style="max-width: 500px; margin: auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: Arial, sans-serif;">
-  <h2 style="text-align: center; margin-bottom: 16px;">Snow Day Predictor</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Snow Day Predictor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      background: #ffffff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+    }
+    .card {
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      background: #fff;
+    }
+    h2 {
+      margin-top: 0;
+      text-align: center;
+      font-size: 1.6rem;
+    }
+    label {
+      display: block;
+      margin-top: 16px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    button {
+      margin-top: 24px;
+      width: 100%;
+      padding: 12px;
+      background: #0078d4;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Snow Day Predictor</h2>
+    <label for="zip">ZIP Code</label>
+    <input type="text" id="zip" placeholder="e.g., 49423" />
 
-  <label for="zip">ZIP Code</label>
-  <input type="text" id="zip" placeholder="e.g., 49423" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc;" />
+    <label for="school">School Name</label>
+    <input type="text" id="school" placeholder="e.g., Holland Christian High School" />
 
-  <label for="school">School Name</label>
-  <input type="text" id="school" placeholder="e.g., Holland Christian High School" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc;" />
+    <button onclick="predictSnowDay()">Check Snow Day Prediction</button>
 
-  <label for="snowfall">Forecasted Snowfall (inches)</label>
-  <input type="number" id="snowfall" placeholder="e.g., 6" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc;" />
+    <div id="result">Enter ZIP and school name to begin.</div>
+  </div>
 
-  <label for="windchill">Wind Chill Factor (0–5)</label>
-  <input type="number" id="windchill" placeholder="e.g., 3" min="0" max="5" style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc;" />
+  <script>
+    function predictSnowDay() {
+      const zip = document.getElementById('zip').value.trim();
+      const school = document.getElementById('school').value.trim();
 
-  <label for="road">Road Preparedness
+      if (!zip || !school) {
+        document.getElementById('result').innerText = "Please enter both ZIP Code and School Name.";
+        return;
+      }
+
+      // Placeholder logic — replace with API calls later
+      const score = zip.endsWith("3") ? 75 : 45;
+      const label = score >= 80 ? "Very High" :
+                    score >= 60 ? "High" :
+                    score >= 40 ? "Moderate" : "Low";
+
+      document.getElementById('result').innerText = 
+        `Snow Day Likelihood for ${school}: ${label} (${score}%)`;
+    }
+  </script>
+</body>
+</html>
