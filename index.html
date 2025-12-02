@@ -4,46 +4,7 @@
   <meta charset="UTF-8" />
   <title>Snow Day Predictor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-    .card {
-      max-width: 520px;
-      width: 100%;
-      background: #fff;
-      padding: 28px;
-      border-radius: 14px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-      text-align: center;
-    }
-    h1 { margin: 0 0 10px; font-size: 1.8rem; }
-    p { margin: 0 0 20px; color: #555; }
-    label { display: block; text-align: left; font-weight: bold; margin-top: 14px; margin-bottom: 6px; }
-    input {
-      width: 100%; padding: 10px; border: 1px solid #ccc;
-      border-radius: 8px; font-size: 1rem;
-    }
-    button {
-      margin-top: 22px; width: 100%; padding: 12px;
-      background: #0078d4; color: #fff; font-weight: bold;
-      border: none; border-radius: 8px; cursor: pointer;
-    }
-    button:hover { background: #005fa3; }
-    #result { margin-top: 20px; font-size: 1.1rem; color: #111; }
-    #reasoning {
-      margin-top: 18px; text-align: left; background: #f9fafb;
-      border: 1px solid #e5e7eb; border-radius: 10px;
-      padding: 14px; font-size: 0.95rem;
-    }
-    #reasoning h3 { margin-top: 0; font-size: 1.05rem; }
-  </style>
+  <link rel="stylesheet" href="style.css" /> <!-- optional if you want separate CSS -->
 </head>
 <body>
   <div class="card">
@@ -65,101 +26,7 @@
     </div>
   </div>
 
-  <script>
-    const XWEATHER_API_KEY = "YOUR_XWEATHER_API_KEY"; // replace with your real key
-
-    async function predictSnowDay() {
-      const zip = document.getElementById("zip").value.trim();
-      const school = document.getElementById("school").value.trim();
-      if (!zip || !school) {
-        document.getElementById("result").innerText = "Please enter both ZIP Code and School Name.";
-        return;
-      }
-
-      // For now, hardcode lat/lon for Holland, MI (49423).
-      // Later you can add geocoding if needed.
-      const lat = 42.79, lon = -86.11;
-
-      try {
-        // 1) Weather API (Open-Meteo)
-        const weatherRes = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=snowfall,temperature_2m,wind_speed&timezone=auto`
-        );
-        const weatherData = await weatherRes.json();
-
-        // Aggregate snowfall for tomorrow
-        const times = weatherData.hourly.time;
-        const snowfall = weatherData.hourly.snowfall;
-        const now = new Date();
-        const tomorrow = new Date(now);
-        tomorrow.setDate(now.getDate() + 1);
-
-        let totalSnowfall = 0;
-        for (let i = 0; i < times.length; i++) {
-          const t = new Date(times[i]);
-          if (
-            t.getDate() === tomorrow.getDate() &&
-            t.getMonth() === tomorrow.getMonth() &&
-            t.getFullYear() === tomorrow.getFullYear()
-          ) {
-            totalSnowfall += snowfall[i];
-          }
-        }
-
-        const avgTemp = weatherData.hourly.temperature_2m[0];
-        const avgWind = weatherData.hourly.wind_speed[0];
-
-        // 2) Road API (Xweather)
-        let surface = "unknown", safety = "unknown";
-        try {
-          const roadRes = await fetch(
-            `https://data.api.xweather.com/roadweather/conditions/?lat=${lat}&lon=${lon}`,
-            { headers: { Authorization: `Bearer ${XWEATHER_API_KEY}` } }
-          );
-          const roadData = await roadRes.json();
-          surface = roadData.surface_condition || "unknown";
-          safety = roadData.safety_index || "unknown";
-        } catch (err) {
-          console.warn("Road API error:", err);
-        }
-
-        // 3) Weather.gov API
-        let nwsForecast = "";
-        try {
-          const pointsRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`);
-          const pointsData = await pointsRes.json();
-          const forecastUrl = pointsData.properties.forecast;
-          const forecastRes = await fetch(forecastUrl);
-          const forecastData = await forecastRes.json();
-          nwsForecast = forecastData.properties.periods[1].detailedForecast;
-        } catch (err) {
-          console.warn("Weather.gov API error:", err);
-        }
-
-        // 4) Score calculation
-        let score = 0;
-        score += totalSnowfall * 5;
-        if (avgTemp <= 0) score += 5;
-        else if (avgTemp <= 10) score += 4;
-        else if (avgTemp <= 20) score += 3;
-        else if (avgTemp <= 32) score += 2;
-        else score += 1;
-
-        if (surface === "ice") score += 15;
-        else if (surface === "snow") score += 10;
-
-        if (safety === "red") score += 10;
-        else if (safety === "yellow") score += 5;
-
-        score = Math.max(0, Math.min(100, Math.round(score)));
-
-        let label = "Low";
-        if (score >= 80) label = "Very High";
-        else if (score >= 60) label = "High";
-        else if (score >= 40) label = "Moderate";
-
-        // 5) Display result
-        document.getElementById("result").innerText =
-          `Snow Day Likelihood for ${school}: ${label} (${score}%)`;
-
-        // 6) Display reasoning
+  <!-- Load your JS -->
+  <script src="predictions.js"></script>
+</body>
+</html>
