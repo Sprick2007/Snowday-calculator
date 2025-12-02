@@ -5,108 +5,388 @@
   <title>Snow Day Predictor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    * {
-      box-sizing: border-box;
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: #ffffff;
     }
     body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      background: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
+      padding: 24px;
     }
-    .predictor-card {
+    .card {
       width: 100%;
-      max-width: 480px;
-      padding: 32px;
-      border-radius: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+      max-width: 520px;
       background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      padding: 28px;
+    }
+    .title {
+      margin: 0;
+      font-size: 1.8rem;
       text-align: center;
     }
-    .predictor-card h1 {
-      margin-top: 0;
-      font-size: 1.8rem;
-      margin-bottom: 8px;
-    }
-    .predictor-card p {
+    .subtitle {
+      margin: 6px 0 20px;
       font-size: 0.95rem;
-      color: #555;
-      margin-bottom: 24px;
+      color: #6b7280;
+      text-align: center;
     }
     label {
       display: block;
-      text-align: left;
-      font-weight: bold;
-      margin-top: 16px;
+      font-weight: 600;
+      margin-top: 14px;
       margin-bottom: 6px;
     }
     input {
       width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
       font-size: 1rem;
+      outline: none;
+    }
+    input:focus {
+      border-color: #1e90ff;
+      box-shadow: 0 0 0 3px rgba(30,144,255,0.15);
     }
     button {
-      margin-top: 28px;
+      margin-top: 22px;
       width: 100%;
-      padding: 14px;
+      padding: 12px 14px;
       background: #0078d4;
-      color: white;
-      font-weight: bold;
+      color: #fff;
+      font-weight: 700;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 1rem;
       cursor: pointer;
     }
-    button:hover {
-      background: #005fa3;
-    }
-    #result {
-      margin-top: 24px;
+    button:hover { background: #006cc0; }
+    .result {
+      margin-top: 18px;
       font-size: 1.1rem;
-      color: #333;
+      text-align: center;
+      color: #111827;
+    }
+    .meter {
+      margin-top: 10px;
+      height: 12px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+    .meter > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff5c5c, #ffa657, #ffd857, #8be78b, #2ecc71);
+      transition: width 300ms ease;
+    }
+    .reasoning {
+      margin-top: 20px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .reasoning h3 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 14px;
+      font-size: 0.95rem;
+    }
+    .grid div { color: #374151; }
+    .small {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #6b7280;
+      text-align: center;
+    }
+    .error {
+      margin-top: 12px;
+      color: #b91c1c;
+      text-align: center;
+      font-size: 0.95rem;
     }
   </style>
 </head>
 <body>
-  <div class="predictor-card">
-    <h1>❄️ Snow Day Predictor</h1>
-    <p>Enter your school location to check tomorrow's forecast</p>
+  <div class="card" role="region" aria-label="Snow Day Predictor">
+    <h1 class="title">❄️ Snow Day Predictor</h1>
+    <p class="subtitle">Enter your school location to check tomorrow’s forecast and see the reasoning.</p>
 
     <label for="zip">ZIP Code</label>
-    <input type="text" id="zip" placeholder="Enter ZIP code" />
+    <input id="zip" type="text" placeholder="e.g., 49423" inputmode="numeric" aria-required="true" />
 
     <label for="school">School Name</label>
-    <input type="text" id="school" placeholder="Enter your school name" />
+    <input id="school" type="text" placeholder="e.g., Holland Christian High School" aria-required="true" />
 
-    <button onclick="predictSnowDay()">Check Snow Day Prediction</button>
+    <button id="predictBtn" onclick="predict()">Check Snow Day Prediction</button>
 
-    <div id="result">Enter ZIP and school name to begin.</div>
+    <div id="result" class="result">Enter ZIP and school name to begin.</div>
+    <div class="meter" aria-hidden="true"><span id="meterFill"></span></div>
+
+    <div id="reasoning" class="reasoning" hidden>
+      <h3>Reasoning</h3>
+      <div class="grid" id="reasonGrid"></div>
+      <div class="small">Estimates are for planning only. Always follow official district communications.</div>
+    </div>
+
+    <div id="error" class="error" hidden></div>
   </div>
 
   <script>
-    function predictSnowDay() {
-      const zip = document.getElementById('zip').value.trim();
-      const school = document.getElementById('school').value.trim();
+    // Replace with your keys to enable live geocoding and road conditions:
+    const OPENCAGE_API_KEY = "YOUR_OPENCAGE_API_KEY"; // https://opencagedata.com
+    const XWEATHER_API_KEY = "YOUR_XWEATHER_API_KEY"; // https://www.xweather.com
+
+    // Utility
+    const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
+    const fmt = (n, unit = "") => (Number.isFinite(n) ? `${Math.round(n * 10) / 10}${unit}` : "n/a");
+
+    async function predict() {
+      clearMessages();
+      const zip = document.getElementById("zip").value.trim();
+      const school = document.getElementById("school").value.trim();
 
       if (!zip || !school) {
-        document.getElementById('result').innerText = "Please enter both ZIP Code and School Name.";
+        showError("Please enter both ZIP Code and School Name.");
         return;
       }
 
-      // Placeholder logic — replace with API calls later
-      const score = zip.endsWith("3") ? 75 : 45;
-      const label = score >= 80 ? "Very High" :
-                    score >= 60 ? "High" :
-                    score >= 40 ? "Moderate" : "Low";
+      try {
+        // 1) Geocode ZIP -> lat/lon
+        const { lat, lon } = await geocodeZip(zip);
 
-      document.getElementById('result').innerText =
-        `Snow Day Likelihood for ${school}: ${label} (${score}%)`;
+        // 2) Fetch next-day weather (Open-Meteo)
+        const weather = await fetchWeather(lat, lon);
+
+        // 3) Fetch road conditions (Xweather) – optional if key provided
+        const road = await fetchRoad(lat, lon);
+
+        // 4) Derive features for scoring
+        const features = deriveFeatures(weather, road);
+
+        // 5) Score and label
+        const { percent, label, breakdown } = scorePrediction(features);
+
+        // 6) Render result and reasoning
+        renderResult(school, percent, label);
+        renderReasoning(zip, lat, lon, features, breakdown);
+      } catch (e) {
+        console.error(e);
+        showError("We couldn’t fetch all live data. Showing best estimate from available sources.");
+        // Fallback: try weather-only if geocoding or road fails
+        try {
+          const { lat, lon } = { lat: 42.79, lon: -86.11 }; // Holland, MI fallback
+          const weather = await fetchWeather(lat, lon);
+          const road = { surface: "unknown", safety: "unknown" };
+          const features = deriveFeatures(weather, road);
+          const { percent, label, breakdown } = scorePrediction(features);
+          renderResult(school, percent, label);
+          renderReasoning(zip, lat, lon, features, breakdown);
+        } catch (e2) {
+          showError("Unable to compute prediction right now. Please try again later.");
+        }
+      }
+    }
+
+    function clearMessages() {
+      document.getElementById("error").hidden = true;
+      document.getElementById("error").textContent = "";
+      document.getElementById("result").textContent = "Calculating…";
+      document.getElementById("meterFill").style.width = "0%";
+      document.getElementById("reasoning").hidden = true;
+      document.getElementById("reasonGrid").innerHTML = "";
+    }
+
+    function showError(msg) {
+      const el = document.getElementById("error");
+      el.textContent = msg;
+      el.hidden = false;
+    }
+
+    async function geocodeZip(zip) {
+      if (!OPENCAGE_API_KEY || OPENCAGE_API_KEY.includes("YOUR_")) {
+        // Simple US ZIP fallback mapping for Holland, MI example and general structure
+        if (zip === "49423") return { lat: 42.79, lon: -86.11 };
+        throw new Error("Missing OpenCage API key and no fallback for this ZIP.");
+      }
+      const url = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(zip)}&key=${OPENCAGE_API_KEY}&limit=1`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data.results || !data.results.length) throw new Error("ZIP not found.");
+      const { lat, lng } = data.results[0].geometry;
+      return { lat: lat, lon: lng };
+    }
+
+    async function fetchWeather(lat, lon) {
+      const params = new URLSearchParams({
+        latitude: lat,
+        longitude: lon,
+        hourly: "snowfall,wind_speed,apparent_temperature",
+        timezone: "auto"
+      });
+      const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const hours = data.hourly || {};
+      const times = hours.time || [];
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+
+      // Aggregate next day's (local) 00:00–23:00 values
+      const dayIdxs = [];
+      for (let i = 0; i < times.length; i++) {
+        const t = new Date(times[i]);
+        if (t.getDate() === tomorrow.getDate() &&
+            t.getMonth() === tomorrow.getMonth() &&
+            t.getFullYear() === tomorrow.getFullYear()) {
+          dayIdxs.push(i);
+        }
+      }
+      const getAgg = (arr, mode = "sum") => {
+        if (!arr || !arr.length || !dayIdxs.length) return null;
+        const vals = dayIdxs.map(i => arr[i]).filter(v => Number.isFinite(v));
+        if (!vals.length) return null;
+        if (mode === "sum") return vals.reduce((a, b) => a + b, 0);
+        if (mode === "avg") return vals.reduce((a, b) => a + b, 0) / vals.length;
+        if (mode === "min") return Math.min(...vals);
+        if (mode === "max") return Math.max(...vals);
+        return null;
+      };
+
+      return {
+        snowfallInches: getAgg(hours.snowfall, "sum"),             // total inches next day
+        windSpeedMph: getAgg(hours.wind_speed, "avg"),             // average mph next day
+        minApparentTempF: getAgg(hours.apparent_temperature, "min")// min °F next day
+      };
+    }
+
+    async function fetchRoad(lat, lon) {
+      if (!XWEATHER_API_KEY || XWEATHER_API_KEY.includes("YOUR_")) {
+        return { surface: "unknown", safety: "unknown" };
+      }
+      const url = `https://data.api.xweather.com/roadweather/conditions/?lat=${lat}&lon=${lon}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${XWEATHER_API_KEY}` }
+      });
+      const data = await res.json();
+      // Shape may vary; attempt common fields, fallback to unknown
+      const surface = data.surface_condition || data.surface || "unknown";
+      const safety = data.safety_index || data.safety || "unknown";
+      return { surface, safety };
+    }
+
+    function deriveFeatures(weather, road) {
+      const snowfall = weather.snowfallInches ?? 0;
+      const windAvg = weather.windSpeedMph ?? 0;
+      const minFeels = weather.minApparentTempF ?? null;
+
+      // Wind chill factor (0-5) from apparent temp thresholds
+      let windChillFactor = 0;
+      if (Number.isFinite(minFeels)) {
+        if (minFeels <= 0) windChillFactor = 5;
+        else if (minFeels <= 10) windChillFactor = 4;
+        else if (minFeels <= 20) windChillFactor = 3;
+        else if (minFeels <= 32) windChillFactor = 2;
+        else windChillFactor = 1;
+      }
+
+      // Road surface weighting
+      let surfaceAdj = 0;
+      const s = (road.surface || "unknown").toLowerCase();
+      if (s.includes("ice")) surfaceAdj = 15;
+      else if (s.includes("snow")) surfaceAdj = 10;
+      else if (s.includes("wet")) surfaceAdj = 3;
+      else surfaceAdj = 0;
+
+      // Safety index weighting
+      let safetyAdj = 0;
+      const si = (road.safety || "unknown").toLowerCase();
+      if (si.includes("red")) safetyAdj = 10;
+      else if (si.includes("yellow")) safetyAdj = 5;
+      else safetyAdj = 0;
+
+      return {
+        snowfall, windAvg, minFeels,
+        surface: road.surface, safety: road.safety,
+        windChillFactor, surfaceAdj, safetyAdj
+      };
+    }
+
+    function scorePrediction(f) {
+      // Base scoring
+      let score = 0;
+
+      // Snowfall weight (cap to avoid runaway)
+      score += clamp(f.snowfall * 5, 0, 45);
+
+      // Wind chill factor (0–5)
+      score += f.windChillFactor;
+
+      // Road surface and safety index adjustments
+      score += f.surfaceAdj;
+      score += f.safetyAdj;
+
+      // Additional small wind influence
+      score += clamp(f.windAvg * 0.5, 0, 10);
+
+      const percent = clamp(Math.round(score), 0, 100);
+      let label = "Low";
+      if (percent >= 80) label = "Very High";
+      else if (percent >= 60) label = "High";
+      else if (percent >= 40) label = "Moderate";
+
+      const breakdown = [
+        { name: "Snowfall", value: `${fmt(f.snowfall, " in")}`, weight: `${fmt(clamp(f.snowfall * 5, 0, 45))} pts` },
+        { name: "Min wind chill (apparent)", value: Number.isFinite(f.minFeels) ? `${fmt(f.minFeels, " °F")}` : "n/a", weight: `${f.windChillFactor} pts` },
+        { name: "Avg wind speed", value: `${fmt(f.windAvg, " mph")}`, weight: `${fmt(clamp(f.windAvg * 0.5, 0, 10))} pts` },
+        { name: "Road surface", value: f.surface || "unknown", weight: `${f.surfaceAdj} pts` },
+        { name: "Safety index", value: f.safety || "unknown", weight: `${f.safetyAdj} pts` }
+      ];
+
+      return { percent, label, breakdown };
+    }
+
+    function renderResult(school, percent, label) {
+      const r = document.getElementById("result");
+      const fill = document.getElementById("meterFill");
+      r.textContent = `Snow Day Likelihood for ${school}: ${label} (${percent}%)`;
+      fill.style.width = `${percent}%`;
+      fill.setAttribute("aria-label", label);
+    }
+
+    function renderReasoning(zip, lat, lon, f, breakdown) {
+      const panel = document.getElementById("reasoning");
+      const grid = document.getElementById("reasonGrid");
+      panel.hidden = false;
+
+      const rows = [
+        { k: "ZIP code", v: zip },
+        { k: "Latitude", v: fmt(lat) },
+        { k: "Longitude", v: fmt(lon) },
+        { k: "Total snowfall (next day)", v: fmt(f.snowfall, " in") },
+        { k: "Min apparent temp (next day)", v: Number.isFinite(f.minFeels) ? fmt(f.minFeels, " °F") : "n/a" },
+        { k: "Avg wind speed (next day)", v: fmt(f.windAvg, " mph") },
+        { k: "Road surface", v: f.surface || "unknown" },
+        { k: "Safety index", v: f.safety || "unknown" }
+      ];
+
+      const weights = breakdown.map(b => `<div><strong>${b.name}:</strong> ${b.value}</div><div><strong>Weight:</strong> ${b.weight}</div>`).join("");
+
+      grid.innerHTML = rows.map(r => `<div><strong>${r.k}:</strong> ${r.v}</div>`).join("") + weights;
     }
   </script>
 </body>
