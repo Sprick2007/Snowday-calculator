@@ -1,5 +1,5 @@
 <script>
-const OPENCAGE_API_KEY = "YOUR_OPENCAGE_API_KEY"; // replace with your key
+const OPENCAGE_API_KEY = "d22ed8ff258545c899280d4fa473b87b"; // replace with your key
 
 async function getSnowDayData(zip) {
   try {
